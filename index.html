@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html class="no-js">
+	<head>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.6.3/dist/css/foundation.min.css" integrity="sha256-ogmFxjqiTMnZhxCqVmcqTvjfe1Y/ec4WaRj/aQPvn+I=" crossorigin="anonymous">
+		<style>
+			div{
+				margin-top:30px;
+				padding-left:30px;
+			}
+		</style>
+	</head>
+	<body >
+	<div class="grid-x grid-padding-x" id="app">
+		<div class="small-2 medium-2 large-2 columns">
+		
+			<h2> Заметки </h2>
+			
+			<button class="hollow button secondary" v-if="!formVisible" @click="create">Создать заметку</button>
+			<span v-if="!editting">
+			<button class="hollow button primary" v-if="formVisible" @click="cancel">Скрыть</button></span>
+		</div>
+		<div class="small-6 medium-2 large-4 columns">
+				
+			<form v-if="formVisible" @submit="checkForm">
+
+				<div v-if="errors.length">
+					<b>Пожалуйста, обратите внимание на ошибки:</b>
+					<ul>
+					  <li v-for="error in errors">{{ error }}</li>
+					</ul>
+				</div>
+
+				<div class="cell small-12">
+					<label>Название заметки</label><input class="medium-6 cell" type="text" v-model="noteForm.name">
+				</div>
+				
+				<div>
+					<label>Важная</label><input type="checkbox" v-model="noteForm.importance">
+				</div>
+			
+				<div>
+					<label>Тип:</label><br>
+					
+					<input type="radio" id="meeting" value="Заметка" v-model="noteForm.type">
+					<label for="meeting">Заметка</label><br>
+					
+					<input type="radio" id="task" value="Задача" v-model="noteForm.type">
+					<label for="task">Задача</label><br>
+					
+					<input type="radio"  id="other" value="Другое" v-model="noteForm.type">
+					<label for="other">Другое</label><br>
+					
+				</div>
+				
+				<div>
+					<label>Статус:</label><br>
+					
+					<select v-model="noteForm.status">
+						<option value="Активная">Активная</option>
+						<option value="Неактивная">Нективная</option>
+						<option value="Завершенная">Завершенная</option>
+						<option value="В очереди">В очереди</option>
+					</select>				
+				</div>
+				
+				<div>
+					<label>Описание</label><textarea v-model="noteForm.text"></textarea>
+				</div>
+
+				<button class="hollow button primary" type="submit">Сохранить</button>
+
+			</form>
+		</div>
+		
+		<div class="small-6 large-6 columns">
+			<div v-for= "note in notes">
+				<h3>{{note.name}}</h3>
+				
+				 <p>{{note.type}} - {{note.status}}</p>
+				 <p v-if="note.importance">Важно</p>
+				<button class="hollow button primary" v-if="note.editable" @click="edit(note)">Изменить заметку</button>
+				<button class="hollow button secondary" v-if="!note.editable" @click="cancel(note)">Отменить изменение</button>
+				<button class="hollow button warning" v-if="note.editable" @click="deleteNote(note)">Удалить заметку</button>
+			</div>
+	</div>
+		
+	</div>
+
+	
+	
+		
+			
+	
+	
+	<script src="vue.js"></script>
+	<script>
+		
+		const app = new Vue({
+			el: '#app',
+			data: {
+				formVisible: false,
+				noteForm: {name: '', importance: '', type: '', status: '', editable: 'true', text: ''},
+				errors: [],
+				editting: false,
+				edittingNote: null,
+				notes:[
+					
+				],
+				
+			},
+			mounted() {
+				if (sessionStorage.getItem('notes')) {
+					try {
+						this.notes = JSON.parse(sessionStorage.getItem('notes'));
+					} catch(e) {
+						sessionStorage.removeItem('notes');
+					}
+				}
+			},
+			methods: {
+				checkForm: function (e) {
+				
+					if (this.noteForm.name && this.noteForm.type && this.noteForm.status) {
+						if (!this.editting){
+							this.noteForm.editable = true;
+							this.notes.push(Object.assign({}, this.noteForm));
+						}
+						else{
+							this.edittingNote = Object.assign(this.edittingNote, this.noteForm);
+							this.editting = false;
+							this.formVisible = false;
+						}
+						
+						parsed = JSON.stringify(this.notes);
+						sessionStorage.setItem('notes', parsed);
+					}
+					
+					this.errors = [];
+
+					if (!this.noteForm.name) {
+						this.errors.push('Требуется указать название заметки.');
+					}
+					if (!this.noteForm.type) {
+						this.errors.push('Требуется указать тип заметки.');
+					}
+					if (!this.noteForm.status) {
+						this.errors.push('Требуется указать статус заметки.');
+					}
+					
+					e.preventDefault();
+				},
+				
+				create: function(){
+					this.noteForm = Object.assign({});
+					this.formVisible = !this.formVisible;
+						
+				},
+				
+				edit: function(note){
+					this.formVisible = true;
+					this.noteForm = Object.assign({}, note);
+					this.editting = true;
+					this.edittingNote = note;
+					note.editable = false;
+
+				},
+				
+				cancel: function(note){
+					this.editting = false;
+					this.formVisible = false;
+					this.noteForm = Object.assign({});
+					note.editable = true;
+				},
+				
+				deleteNote: function(note){
+					this.notes.splice(note,1);
+					
+					parsed = JSON.stringify(this.notes);
+					sessionStorage.setItem('notes', parsed);
+				}
+				
+			 }
+		})
+		
+	</script>
+</body>
+</html>
